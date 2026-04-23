@@ -234,7 +234,7 @@
         <main class="main-content">
             <section class="content-card">
                 <h2>User Registration</h2>
-                <form method="get" class="row g-3 align-items-end">
+                <form id="scoreForm" class="row g-3 align-items-end">
                     <div class="col-lg-7 col-md-8 col-12">
                         <label for="registrationNumber" class="form-label">Registration Number:</label>
                         <input
@@ -243,7 +243,7 @@
                             name="registration_number"
                             class="form-control"
                             placeholder="Enter registration number"
-                            value="{{registrationNumber}}"
+                            autocomplete="off"
                         >
                     </div>
                     <div class="col-lg-auto col-md-auto col-12">
@@ -254,9 +254,103 @@
 
             <section class="content-card">
                 <h2>Detailed Scores</h2>
-                {{detailSection}}
+                <div id="detailSection">
+                    <p class="detail-text">Nhập số báo danh để xem chi tiết điểm.</p>
+                </div>
             </section>
         </main>
     </div>
+
+    <script>
+        const form = document.getElementById('scoreForm');
+        const registrationInput = document.getElementById('registrationNumber');
+        const detailSection = document.getElementById('detailSection');
+
+        function renderInfo(message) {
+            detailSection.innerHTML = '';
+            const p = document.createElement('p');
+            p.className = 'detail-text';
+            p.textContent = message;
+            detailSection.appendChild(p);
+        }
+
+        function renderError(message) {
+            detailSection.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'alert alert-danger mb-0';
+            div.setAttribute('role', 'alert');
+            div.textContent = message;
+            detailSection.appendChild(div);
+        }
+
+        function renderResult(payload) {
+            detailSection.innerHTML = '';
+
+            const title = document.createElement('p');
+            title.className = 'result-title';
+            title.textContent = 'Kết quả cho SBD: ';
+
+            const strong = document.createElement('strong');
+            strong.textContent = payload.registration_number;
+            title.appendChild(strong);
+            detailSection.appendChild(title);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-responsive';
+
+            const table = document.createElement('table');
+            table.className = 'table table-bordered score-table';
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th style="width: 60%;">Môn học</th><th>Điểm</th></tr>';
+
+            const tbody = document.createElement('tbody');
+            payload.scores.forEach((subject) => {
+                const tr = document.createElement('tr');
+
+                const tdLabel = document.createElement('td');
+                tdLabel.textContent = subject.label;
+
+                const tdValue = document.createElement('td');
+                tdValue.textContent = subject.value;
+
+                tr.appendChild(tdLabel);
+                tr.appendChild(tdValue);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+            detailSection.appendChild(wrapper);
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const registrationNumber = registrationInput.value.trim();
+
+            if (!registrationNumber) {
+                renderInfo('Nhập số báo danh để xem chi tiết điểm.');
+                return;
+            }
+
+            renderInfo('Đang tra cứu...');
+
+            try {
+                const response = await fetch(`test.php?registration_number=${encodeURIComponent(registrationNumber)}`);
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    renderError(payload.error || 'Có lỗi xảy ra khi tra cứu dữ liệu.');
+                    return;
+                }
+
+                renderResult(payload);
+            } catch (error) {
+                renderError('Không thể kết nối đến máy chủ.');
+            }
+        });
+    </script>
 </body>
 </html>
